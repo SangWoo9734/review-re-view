@@ -78,10 +78,6 @@ export function PullRequestCard({
               </div>
               
               <span>📅 {createdAt}</span>
-              
-              {pullRequest.commentCount > 0 && (
-                <span>💬 {pullRequest.commentCount}</span>
-              )}
             </div>
 
             {/* 상태 뱃지 */}

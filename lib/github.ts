@@ -59,6 +59,9 @@ export function transformPullRequest(pr: GitHubPullRequest, owner: string, repo:
   // merged_at이 있으면 merged, 없고 state가 closed면 closed, 그 외엔 open
   const state = pr.merged_at ? 'merged' : pr.state as 'open' | 'closed';
   
+  // 코멘트 개수 계산 (GitHub API에서 제공하는 값들)
+  const commentCount = (pr.comments || 0) + (pr.review_comments || 0);
+  
   return {
     id: pr.id,
     number: pr.number,
@@ -70,7 +73,7 @@ export function transformPullRequest(pr: GitHubPullRequest, owner: string, repo:
       login: pr.user.login,
       avatarUrl: pr.user.avatar_url,
     },
-    commentCount: pr.comments + pr.review_comments,
+    commentCount,
     repository: {
       owner,
       name: repo,
@@ -99,7 +102,7 @@ export function transformComment(
     return {
       ...baseComment,
       path: reviewComment.path,
-      line: reviewComment.line,
+      line: reviewComment.line || undefined,
     };
   }
 

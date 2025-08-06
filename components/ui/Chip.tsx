@@ -10,10 +10,10 @@ interface ChipProps {
 
 const chipVariants = {
   default: 'bg-gray-100 text-gray-800 border-gray-200',
-  success: 'bg-success/10 text-success border-success/20',
-  warning: 'bg-warning/10 text-warning border-warning/20',
-  error: 'bg-error/10 text-error border-error/20',
-  info: 'bg-info/10 text-info border-info/20',
+  success: 'bg-green-50 text-green-700 border-green-200',
+  warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  error: 'bg-red-50 text-red-700 border-red-200',
+  info: 'bg-blue-50 text-blue-700 border-blue-200',
   'github-open': 'bg-blue-50 text-blue-700 border-blue-200',
   'github-merged': 'bg-purple-50 text-purple-700 border-purple-200',
   'github-closed': 'bg-red-50 text-red-700 border-red-200',
