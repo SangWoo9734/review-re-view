@@ -1,35 +1,81 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRepositories } from '@/hooks/useGitHub';
+import { useRepositories, usePullRequests } from '@/hooks/useGitHub';
 import { Button } from '@/components/ui/Button';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { ErrorState, EmptyState } from '@/components/ui/ErrorState';
 import { RepositoryCard } from '@/components/features/RepositoryCard';
-import { Repository } from '@/types/github';
+import { PullRequestCard } from '@/components/features/PullRequestCard';
+import { Repository, PullRequest } from '@/types/github';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
 
   const { 
     data: repositoriesData, 
-    isLoading, 
-    error, 
-    refetch 
+    isLoading: reposLoading, 
+    error: reposError, 
+    refetch: refetchRepos 
   } = useRepositories({
     search: searchTerm || undefined,
     enabled: !!user,
   });
 
+  const { 
+    data: pullRequestsData, 
+    isLoading: prsLoading, 
+    error: prsError, 
+    refetch: refetchPRs 
+  } = usePullRequests(
+    selectedRepo?.owner.login || '',
+    selectedRepo?.name || '',
+    {
+      enabled: !!selectedRepo,
+      state: 'all',
+    }
+  );
+
   const repositories = repositoriesData?.repositories || [];
+  const pullRequests = pullRequestsData?.pulls || [];
 
   const handleRepositorySelect = (repo: Repository) => {
     setSelectedRepo(repo);
+    setSelectedPRs([]); // 레포 변경시 선택된 PR들 초기화
+  };
+
+  const handlePRSelect = (pr: PullRequest, selected: boolean) => {
+    if (selected) {
+      // 최대 5개 제한
+      if (selectedPRs.length >= 5) {
+        return;
+      }
+      setSelectedPRs([...selectedPRs, pr]);
+    } else {
+      setSelectedPRs(selectedPRs.filter(selectedPR => selectedPR.id !== pr.id));
+    }
+  };
+
+  const isPRSelected = (pr: PullRequest) => {
+    return selectedPRs.some(selectedPR => selectedPR.id === pr.id);
+  };
+
+  const canSelectMore = selectedPRs.length < 5;
+
+  const handleStartAnalysis = () => {
+    if (selectedPRs.length === 0) return;
+    
+    // 선택된 PR 정보를 URL 파라미터로 전달
+    const prsParam = encodeURIComponent(JSON.stringify(selectedPRs));
+    router.push(`/analysis?prs=${prsParam}`);
   };
 
   return (
@@ -69,7 +115,7 @@ export default function Dashboard() {
         </header>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto flex h-[calc(100vh-80px)]">
+        <div className="max-w-7xl mx-auto flex h-[calc(100vh-152px)] relative">
           {/* Sidebar - Repository List */}
           <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
@@ -82,19 +128,19 @@ export default function Dashboard() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-4">
-              {isLoading && (
+              {reposLoading && (
                 <LoadingState>레포지토리를 불러오는 중...</LoadingState>
               )}
 
-              {error && (
+              {reposError && (
                 <ErrorState
                   title="불러오기 실패"
-                  message={error.message}
-                  onRetry={() => refetch()}
+                  message={reposError.message}
+                  onRetry={() => refetchRepos()}
                 />
               )}
 
-              {!isLoading && !error && repositories.length === 0 && (
+              {!reposLoading && !reposError && repositories.length === 0 && (
                 <EmptyState
                   title={searchTerm ? "검색 결과 없음" : "레포지토리 없음"}
                   message={searchTerm ? `"${searchTerm}"에 대한 검색 결과가 없습니다.` : "접근 가능한 레포지토리가 없습니다."}
@@ -102,7 +148,7 @@ export default function Dashboard() {
                 />
               )}
 
-              {!isLoading && !error && repositories.length > 0 && (
+              {!reposLoading && !reposError && repositories.length > 0 && (
                 <div className="space-y-3">
                   {repositories.map((repo) => (
                     <RepositoryCard
@@ -118,23 +164,56 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content - PR List */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col bg-white">
             {selectedRepo ? (
-              <div className="p-6">
-                <div className="mb-6">
-                  <h2 className="text-h2 text-gray-900 mb-2">
-                    📋 {selectedRepo.name}
-                  </h2>
-                  <p className="text-gray-600">
-                    PR 목록을 조회하여 분석할 PR을 선택하세요.
-                  </p>
+              <div className="flex flex-col h-full">
+                {/* PR List Header */}
+                <div className="p-6 border-b border-gray-200">
+                  <div className="mb-4">
+                    <h2 className="text-h2 text-gray-900 mb-2">
+                      📋 {selectedRepo.name}
+                    </h2>
+                    <p className="text-gray-600">
+                      분석할 PR을 선택하세요 (최대 5개)
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="bg-info/10 border border-info/20 rounded-lg p-4">
-                  <h3 className="font-semibold text-info mb-2">개발 진행 중</h3>
-                  <p className="text-body2 text-info/80">
-                    PR 목록 조회 기능을 구현 중입니다. 곧 완성될 예정입니다!
-                  </p>
+
+                {/* PR List Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {prsLoading && (
+                    <LoadingState>PR 목록을 불러오는 중...</LoadingState>
+                  )}
+
+                  {prsError && (
+                    <ErrorState
+                      title="PR 목록 불러오기 실패"
+                      message={prsError.message}
+                      onRetry={() => refetchPRs()}
+                    />
+                  )}
+
+                  {!prsLoading && !prsError && pullRequests.length === 0 && (
+                    <EmptyState
+                      title="PR이 없습니다"
+                      message="이 레포지토리에는 분석할 수 있는 PR이 없습니다."
+                      icon="📝"
+                    />
+                  )}
+
+                  {!prsLoading && !prsError && pullRequests.length > 0 && (
+                    <div className="space-y-4">
+                      {pullRequests.map((pr) => (
+                        <PullRequestCard
+                          key={pr.id}
+                          pullRequest={pr}
+                          onSelect={(selected) => handlePRSelect(pr, selected)}
+                          selected={isPRSelected(pr)}
+                          disabled={!canSelectMore && !isPRSelected(pr)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -148,6 +227,32 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Bottom Action Bar */}
+        {selectedPRs.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-body1 font-medium text-gray-900">
+                    선택됨: {selectedPRs.length}개 PR
+                  </span>
+                  <span className="text-body2 text-gray-500">
+                    (최대 5개)
+                  </span>
+                </div>
+                
+                <Button
+                  size="lg"
+                  onClick={handleStartAnalysis}
+                  disabled={selectedPRs.length === 0}
+                >
+                  📊 분석 시작하기
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );
