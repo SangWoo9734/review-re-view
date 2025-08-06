@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PullRequest } from '@/types/github';
+import { useTextAnalysis } from '@/hooks/useTextAnalysis';
 
 interface AnalysisStep {
   id: string;
@@ -20,21 +21,21 @@ const analysisSteps: AnalysisStep[] = [
     id: 'collect-comments',
     title: '📥 코멘트 수집',
     description: 'GitHub API에서 PR 코멘트를 수집하는 중...',
-    progress: 20,
+    progress: 25,
     status: 'pending',
   },
   {
     id: 'preprocess-text',
     title: '🔤 텍스트 전처리',
     description: '마크다운 제거, 토큰화, 불용어 제거 중...',
-    progress: 40,
+    progress: 50,
     status: 'pending',
   },
   {
     id: 'analyze-keywords',
     title: '🔍 키워드 분석',
     description: 'TF-IDF 계산 및 카테고리 분류 중...',
-    progress: 70,
+    progress: 75,
     status: 'pending',
   },
   {
@@ -49,12 +50,18 @@ const analysisSteps: AnalysisStep[] = [
 export default function AnalysisPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [steps, setSteps] = useState<AnalysisStep[]>(analysisSteps);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
   const [totalComments, setTotalComments] = useState(0);
+  
+  const { 
+    isAnalyzing, 
+    progress, 
+    result, 
+    error, 
+    startAnalysis 
+  } = useTextAnalysis();
 
-  // URL에서 선택된 PR 정보 파싱 (실제로는 서버에서 받아와야 함)
+  // URL에서 선택된 PR 정보 파싱
   useEffect(() => {
     const prsParam = searchParams.get('prs');
     if (prsParam) {
@@ -71,41 +78,48 @@ export default function AnalysisPage() {
     }
   }, [searchParams, router]);
 
-  // 분석 시뮬레이션
+  // 분석 시작
   useEffect(() => {
-    if (selectedPRs.length === 0) return;
+    if (selectedPRs.length > 0 && !isAnalyzing && !result && !error) {
+      startAnalysis(selectedPRs);
+    }
+  }, [selectedPRs, isAnalyzing, result, error, startAnalysis]);
 
-    const runAnalysis = async () => {
-      for (let i = 0; i < steps.length; i++) {
-        // 현재 단계를 running으로 변경
-        setSteps(prev => prev.map((step, index) => ({
-          ...step,
-          status: index === i ? 'running' : index < i ? 'completed' : 'pending'
-        })));
-        setCurrentStepIndex(i);
-
-        // 각 단계별 대기 시간 (실제로는 API 호출)
-        const delay = i === 0 ? 3000 : i === 1 ? 2000 : i === 2 ? 4000 : 2000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        // 단계 완료
-        setSteps(prev => prev.map((step, index) => ({
-          ...step,
-          status: index <= i ? 'completed' : 'pending'
-        })));
-      }
-
-      // 분석 완료 후 결과 페이지로 이동
+  // 분석 완료 후 결과 페이지로 이동
+  useEffect(() => {
+    if (result && !isAnalyzing) {
+      // 분석 결과를 sessionStorage에 저장
+      sessionStorage.setItem('analysisResult', JSON.stringify(result));
+      sessionStorage.setItem('analyzedPRs', JSON.stringify(selectedPRs));
+      
       setTimeout(() => {
         router.push('/results');
-      }, 1000);
-    };
+      }, 1500);
+    }
+  }, [result, isAnalyzing, selectedPRs, router]);
 
-    runAnalysis();
-  }, [selectedPRs, router]);
+  // 에러 처리
+  useEffect(() => {
+    if (error) {
+      console.error('Analysis error:', error);
+    }
+  }, [error]);
 
-  const currentStep = steps[currentStepIndex];
-  const overallProgress = currentStepIndex > 0 ? steps[currentStepIndex - 1].progress : 0;
+  // 진행 상황에 따른 단계 상태 업데이트
+  const currentSteps = analysisSteps.map((step, index) => {
+    if (!progress) return { ...step, status: 'pending' as const };
+    
+    if (index + 1 < progress.step) {
+      return { ...step, status: 'completed' as const };
+    } else if (index + 1 === progress.step) {
+      return { ...step, status: 'running' as const };
+    } else {
+      return { ...step, status: 'pending' as const };
+    }
+  });
+
+  const overallProgress = progress?.progress || 0;
+  const currentStep = progress ? analysisSteps[progress.step - 1] : null;
 
   return (
     <ProtectedRoute>
@@ -145,9 +159,21 @@ export default function AnalysisPage() {
                 </div>
               </div>
 
+              {/* Error State */}
+              {error && (
+                <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-error font-medium">❌ 분석 오류</span>
+                  </div>
+                  <p className="text-body2 text-error">
+                    {error}
+                  </p>
+                </div>
+              )}
+
               {/* Steps */}
               <div className="space-y-6">
-                {steps.map((step, index) => (
+                {currentSteps.map((step, index) => (
                   <div key={step.id} className="flex items-start gap-4">
                     {/* Step Icon */}
                     <div className="flex-shrink-0 mt-1">
@@ -184,7 +210,7 @@ export default function AnalysisPage() {
               </div>
 
               {/* Current Step Info */}
-              {currentStep && (
+              {isAnalyzing && currentStep && (
                 <div className="mt-8 p-4 bg-primary-50 border border-primary-200 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <LoadingSpinner size="sm" />
@@ -193,10 +219,23 @@ export default function AnalysisPage() {
                     </span>
                   </div>
                   <p className="text-body2 text-primary-800">
-                    {currentStep.description}
+                    {progress?.currentStepName || currentStep.description}
                   </p>
                   <p className="text-caption text-primary-700 mt-1">
-                    예상 소요 시간: 약 {currentStepIndex === 2 ? '30' : '10'}초
+                    진행률: {progress?.step || 0} / {progress?.total || 4} 단계
+                  </p>
+                </div>
+              )}
+
+              {/* Completion Message */}
+              {result && !isAnalyzing && (
+                <div className="mt-8 p-4 bg-success/10 border border-success/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-success font-medium">✅ 분석 완료</span>
+                  </div>
+                  <p className="text-body2 text-success-dark">
+                    총 {result.keywords.length}개의 키워드와 {result.commonPhrases.length}개의 공통 구문을 분석했습니다.<br />
+                    잠시 후 결과 페이지로 이동합니다...
                   </p>
                 </div>
               )}
