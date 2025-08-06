@@ -17,7 +17,7 @@ const stateConfig = {
   },
   merged: {
     variant: 'github-merged' as const,
-    label: 'Merged',
+    label: 'Merged', 
   },
   closed: {
     variant: 'github-closed' as const,

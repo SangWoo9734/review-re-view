@@ -14,9 +14,9 @@ const chipVariants = {
   warning: 'bg-warning/10 text-warning border-warning/20',
   error: 'bg-error/10 text-error border-error/20',
   info: 'bg-info/10 text-info border-info/20',
-  'github-open': 'bg-github-open/10 text-github-open border-github-open/20',
-  'github-merged': 'bg-github-merged/10 text-github-merged border-github-merged/20',
-  'github-closed': 'bg-github-closed/10 text-github-closed border-github-closed/20',
+  'github-open': 'bg-blue-50 text-blue-700 border-blue-200',
+  'github-merged': 'bg-purple-50 text-purple-700 border-purple-200',
+  'github-closed': 'bg-red-50 text-red-700 border-red-200',
 };
 
 const chipSizes = {
