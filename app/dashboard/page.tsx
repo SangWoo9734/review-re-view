@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
+  const [showOnlyMyPRs, setShowOnlyMyPRs] = useState(true); // 기본값을 내 PR만 보기로 설정
 
   const { 
     data: repositoriesData, 
@@ -45,7 +46,12 @@ export default function Dashboard() {
   );
 
   const repositories = repositoriesData?.repositories || [];
-  const pullRequests = pullRequestsData?.pulls || [];
+  const allPullRequests = pullRequestsData?.pulls || [];
+  
+  // 내 PR만 필터링하거나 모든 PR 표시
+  const pullRequests = showOnlyMyPRs 
+    ? allPullRequests.filter(pr => pr.author.login === user?.login)
+    : allPullRequests;
 
   const handleRepositorySelect = (repo: Repository) => {
     setSelectedRepo(repo);
@@ -169,13 +175,54 @@ export default function Dashboard() {
               <div className="flex flex-col h-full">
                 {/* PR List Header */}
                 <div className="p-6 border-b border-gray-200">
-                  <div className="mb-4">
-                    <h2 className="text-h2 text-gray-900 mb-2">
-                      📋 {selectedRepo.name}
-                    </h2>
-                    <p className="text-gray-600">
-                      분석할 PR을 선택하세요 (최대 5개)
-                    </p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-h2 text-gray-900 mb-2">
+                        📋 {selectedRepo.name}
+                      </h2>
+                      <p className="text-gray-600">
+                        분석할 PR을 선택하세요 (최대 5개)
+                      </p>
+                    </div>
+                    
+                    {/* Filter Toggle */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-body2 text-gray-600">
+                        내 PR만 보기
+                      </span>
+                      <button
+                        onClick={() => {
+                          setShowOnlyMyPRs(!showOnlyMyPRs);
+                          setSelectedPRs([]); // 필터 변경시 선택 초기화
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                          showOnlyMyPRs ? 'bg-primary-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            showOnlyMyPRs ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* PR Count Info */}
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>
+                      전체 PR: {allPullRequests.length}개
+                    </span>
+                    {showOnlyMyPRs && (
+                      <span>
+                        내 PR: {pullRequests.length}개
+                      </span>
+                    )}
+                    {!showOnlyMyPRs && pullRequests.length !== allPullRequests.length && (
+                      <span>
+                        표시된 PR: {pullRequests.length}개
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -195,8 +242,14 @@ export default function Dashboard() {
 
                   {!prsLoading && !prsError && pullRequests.length === 0 && (
                     <EmptyState
-                      title="PR이 없습니다"
-                      message="이 레포지토리에는 분석할 수 있는 PR이 없습니다."
+                      title={showOnlyMyPRs ? "내 PR이 없습니다" : "PR이 없습니다"}
+                      message={
+                        showOnlyMyPRs 
+                          ? allPullRequests.length > 0 
+                            ? "이 레포지토리에 내가 생성한 PR이 없습니다. 필터를 해제하여 다른 사람의 PR도 확인해보세요."
+                            : "이 레포지토리에는 PR이 없습니다."
+                          : "이 레포지토리에는 분석할 수 있는 PR이 없습니다."
+                      }
                       icon="📝"
                     />
                   )}
