@@ -8,6 +8,8 @@ import { Chip } from '@/components/ui/Chip';
 import { useRouter } from 'next/navigation';
 import { AnalysisResult, KeywordData } from '@/lib/textAnalysis';
 import { PullRequest } from '@/types/github';
+import { WordCloud } from '@/components/features/WordCloud';
+import { useWordCloud, WordCloudData } from '@/hooks/useWordCloud';
 
 type TabType = 'wordcloud' | 'keywords' | 'actions';
 
@@ -16,6 +18,9 @@ export default function ResultsPage() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analyzedPRs, setAnalyzedPRs] = useState<PullRequest[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('wordcloud');
+
+  // 워드클라우드 데이터 생성 (항상 호출)
+  const { wordCloudData } = useWordCloud(analysisResult);
 
   useEffect(() => {
     // sessionStorage에서 분석 결과 불러오기
@@ -111,20 +116,34 @@ export default function ResultsPage() {
             {activeTab === 'wordcloud' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>워드클라우드</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>🌥 키워드 워드클라우드</CardTitle>
+                    <div className="text-sm text-gray-600">
+                      총 {wordCloudData.length}개 키워드
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-4">🎨</div>
-                      <h3 className="text-h3 text-gray-900 mb-2">
-                        Phase 6 구현 예정
-                      </h3>
-                      <p className="text-gray-600">
-                        D3.js 워드클라우드 시각화가 구현될 예정입니다.<br />
-                        현재는 키워드 분석 탭에서 결과를 확인하실 수 있습니다.
-                      </p>
-                    </div>
+                  <div className="flex justify-center">
+                    <WordCloud 
+                      data={wordCloudData}
+                      width={700}
+                      height={400}
+                      onWordClick={(word: WordCloudData) => {
+                        console.log('Clicked word:', word);
+                        // 나중에 키워드 상세 정보 모달이나 사이드바 구현 가능
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">💡 워드클라우드 사용법</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• 글자 크기가 클수록 중요도(TF-IDF)가 높은 키워드입니다</li>
+                      <li>• 색상은 키워드 카테고리를 나타냅니다 (성능, 코드품질, 버그수정 등)</li>
+                      <li>• 키워드에 마우스를 올리면 상세 정보를 확인할 수 있습니다</li>
+                      <li>• 키워드를 클릭하면 관련 정보를 볼 수 있습니다</li>
+                    </ul>
                   </div>
                 </CardContent>
               </Card>
