@@ -20,8 +20,8 @@ const chipVariants = {
 };
 
 const chipSizes = {
-  sm: 'px-2 py-1 text-caption',
-  md: 'px-3 py-1 text-body2',
+  sm: 'px-1.5 py-0.5 text-xs',
+  md: 'px-2 py-0.5 text-caption',
 };
 
 export function Chip({ 
