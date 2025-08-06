@@ -1,5 +1,6 @@
 import { PullRequest } from '@/types/github';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
 import { cn } from '@/lib/utils';
 
 interface PullRequestCardProps {
@@ -9,16 +10,19 @@ interface PullRequestCardProps {
   disabled?: boolean;
 }
 
-const stateColors = {
-  open: 'bg-github-open text-white',
-  merged: 'bg-github-merged text-white',
-  closed: 'bg-github-closed text-white',
-};
-
-const stateIcons = {
-  open: '🔄',
-  merged: '✅',
-  closed: '❌',
+const stateConfig = {
+  open: {
+    variant: 'github-open' as const,
+    label: 'Open',
+  },
+  merged: {
+    variant: 'github-merged' as const,
+    label: 'Merged',
+  },
+  closed: {
+    variant: 'github-closed' as const,
+    label: 'Closed',
+  },
 };
 
 export function PullRequestCard({ 
@@ -82,16 +86,12 @@ export function PullRequestCard({
 
             {/* 상태 뱃지 */}
             <div className="flex items-center gap-2">
-              <span 
-                className={cn(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded-full text-caption font-medium',
-                  stateColors[pullRequest.state]
-                )}
+              <Chip 
+                variant={stateConfig[pullRequest.state].variant}
+                size="sm"
               >
-                {stateIcons[pullRequest.state]} 
-                {pullRequest.state === 'open' ? 'Open' : 
-                 pullRequest.state === 'merged' ? 'Merged' : 'Closed'}
-              </span>
+                {stateConfig[pullRequest.state].label}
+              </Chip>
               
               <span className="text-caption text-gray-500">
                 #{pullRequest.number}

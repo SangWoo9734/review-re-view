@@ -1,5 +1,6 @@
 import { Repository } from '@/types/github';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
 import { cn } from '@/lib/utils';
 
 interface RepositoryCardProps {
@@ -39,14 +40,14 @@ export function RepositoryCard({
           
           <div className="flex items-center gap-2 ml-3">
             {repository.isPrivate && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-caption bg-gray-100 text-gray-600">
+              <Chip variant="default" size="sm">
                 🔒 Private
-              </span>
+              </Chip>
             )}
             {showPRCount && repository.prCount !== undefined && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-caption bg-primary-100 text-primary-800">
+              <Chip variant="info" size="sm">
                 📝 {repository.prCount}
-              </span>
+              </Chip>
             )}
           </div>
         </div>
