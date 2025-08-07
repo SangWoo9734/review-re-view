@@ -12,6 +12,8 @@ import { WordCloud } from '@/components/features/WordCloud';
 import { useWordCloud, WordCloudData } from '@/hooks/useWordCloud';
 import { ActionItemCard } from '@/components/features/ActionItemCard';
 import { useActionItems } from '@/hooks/useActionItems';
+import { getCategoryLabel, getCategoryChipVariant, CATEGORY_LABELS_SIDEBAR } from '@/lib/constants/categories';
+import type { KeywordCategory } from '@/lib/textAnalysis';
 
 type TabType = 'wordcloud' | 'keywords' | 'actions';
 
@@ -180,15 +182,8 @@ export default function ResultsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-gray-900">{keyword.keyword}</span>
-                              <Chip variant="info" size="sm">
-                                {keyword.category === 'code-quality' ? '코드품질' :
-                                 keyword.category === 'performance' ? '성능' :
-                                 keyword.category === 'bug-fix' ? '버그수정' :
-                                 keyword.category === 'architecture' ? '아키텍처' :
-                                 keyword.category === 'testing' ? '테스트' :
-                                 keyword.category === 'documentation' ? '문서화' :
-                                 keyword.category === 'security' ? '보안' :
-                                 keyword.category === 'ui-ux' ? 'UI/UX' : '일반'}
+                              <Chip variant={getCategoryChipVariant(keyword.category)} size="sm">
+                                {getCategoryLabel(keyword.category)}
                               </Chip>
                             </div>
                             <div className="text-sm text-gray-600">
@@ -213,27 +208,14 @@ export default function ResultsPage() {
                         .map(([category, keywords]) => (
                         <div key={category}>
                           <h4 className="font-medium text-gray-900 mb-3">
-                            {category === 'code-quality' ? '🧹 코드 품질' :
-                             category === 'performance' ? '⚡ 성능' :
-                             category === 'bug-fix' ? '🐛 버그 수정' :
-                             category === 'architecture' ? '🏗️ 아키텍처' :
-                             category === 'testing' ? '🧪 테스트' :
-                             category === 'documentation' ? '📚 문서화' :
-                             category === 'security' ? '🔒 보안' :
-                             category === 'ui-ux' ? '🎨 UI/UX' : '📝 일반'}
+                            {getCategoryLabel(category as KeywordCategory, true)}
                             <span className="ml-2 text-sm text-gray-500">({keywords.length}개)</span>
                           </h4>
                           <div className="flex flex-wrap gap-2">
                             {keywords.slice(0, 10).map((keyword) => (
                               <Chip 
                                 key={keyword.keyword} 
-                                variant={
-                                  category === 'code-quality' ? 'info' :
-                                  category === 'performance' ? 'warning' :
-                                  category === 'bug-fix' ? 'error' :
-                                  category === 'testing' ? 'success' :
-                                  'default'
-                                }
+                                variant={getCategoryChipVariant(category as KeywordCategory)}
                                 size="sm"
                               >
                                 {keyword.keyword} ({keyword.frequency})
@@ -446,14 +428,7 @@ export default function ResultsPage() {
                         .map(([category, keywords]) => (
                           <div key={category} className="flex justify-between">
                             <span>
-                              {category === 'code-quality' ? '🧹 코드품질' :
-                               category === 'performance' ? '⚡ 성능' :
-                               category === 'bug-fix' ? '🐛 버그수정' :
-                               category === 'architecture' ? '🏗️ 아키텍처' :
-                               category === 'testing' ? '🧪 테스트' :
-                               category === 'documentation' ? '📚 문서화' :
-                               category === 'security' ? '🔒 보안' :
-                               category === 'ui-ux' ? '🎨 UI/UX' : '📝 일반'}
+                              {CATEGORY_LABELS_SIDEBAR[category as KeywordCategory]}
                             </span>
                             <span className="font-medium">{keywords.length}개</span>
                           </div>
