@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useRouter } from 'next/navigation';
-import { AnalysisResult, KeywordData } from '@/lib/textAnalysis';
+import { AnalysisResult } from '@/lib/textAnalysis';
 import { PullRequest } from '@/types/github';
 import { WordCloud } from '@/components/features/WordCloud';
 import { useWordCloud, WordCloudData } from '@/hooks/useWordCloud';
+import { ActionItemCard } from '@/components/features/ActionItemCard';
+import { useActionItems } from '@/hooks/useActionItems';
 
 type TabType = 'wordcloud' | 'keywords' | 'actions';
 
@@ -21,6 +23,17 @@ export default function ResultsPage() {
 
   // 워드클라우드 데이터 생성 (항상 호출)
   const { wordCloudData } = useWordCloud(analysisResult);
+
+  // 액션 아이템 데이터 생성
+  const { 
+    filteredItems: actionItems, 
+    stats: actionStats, 
+    expandedItems, 
+    filters: actionFilters,
+    toggleExpanded,
+    setFilter,
+    clearFilters
+  } = useActionItems(analysisResult);
 
   useEffect(() => {
     // sessionStorage에서 분석 결과 불러오기
@@ -256,25 +269,122 @@ export default function ResultsPage() {
 
             {/* Action Items Tab */}
             {activeTab === 'actions' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>액션 아이템</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
+              <div className="space-y-6">
+                {/* 액션 아이템 통계 */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>🎯 액션 아이템 통계</CardTitle>
+                      <div className="text-sm text-gray-600">
+                        총 {actionStats.totalItems}개 항목
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 우선순위별 통계 */}
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="text-sm font-medium text-red-900 mb-1">🚨 긴급 (P1)</div>
+                        <div className="text-2xl font-bold text-red-700">{actionStats.byPriority.P1}</div>
+                        <div className="text-xs text-red-600">즉시 처리 필요</div>
+                      </div>
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="text-sm font-medium text-yellow-900 mb-1">⚠️ 중요 (P2)</div>
+                        <div className="text-2xl font-bold text-yellow-700">{actionStats.byPriority.P2}</div>
+                        <div className="text-xs text-yellow-600">가능한 빨리 처리</div>
+                      </div>
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-sm font-medium text-blue-900 mb-1">💡 제안 (P3)</div>
+                        <div className="text-2xl font-bold text-blue-700">{actionStats.byPriority.P3}</div>
+                        <div className="text-xs text-blue-600">시간이 될 때 검토</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 필터링 */}
+                {actionItems.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>🔍 필터링</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium text-gray-700">우선순위:</label>
+                          <select
+                            value={actionFilters.priority}
+                            onChange={(e) => setFilter('priority', e.target.value)}
+                            className="px-3 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="all">전체</option>
+                            <option value="P1">P1 (긴급)</option>
+                            <option value="P2">P2 (중요)</option>
+                            <option value="P3">P3 (제안)</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium text-gray-700">카테고리:</label>
+                          <select
+                            value={actionFilters.category}
+                            onChange={(e) => setFilter('category', e.target.value)}
+                            className="px-3 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="all">전체</option>
+                            <option value="immediate">즉시 처리</option>
+                            <option value="improvement">개선 사항</option>
+                            <option value="consideration">검토 사항</option>
+                          </select>
+                        </div>
+                        {(actionFilters.priority !== 'all' || actionFilters.category !== 'all') && (
+                          <button
+                            onClick={clearFilters}
+                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                          >
+                            필터 초기화
+                          </button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* 액션 아이템 목록 */}
+                {actionItems.length > 0 ? (
+                  <div className="space-y-4">
+                    {actionItems.map((actionItem) => (
+                      <ActionItemCard
+                        key={actionItem.id}
+                        actionItem={actionItem}
+                        onExpand={toggleExpanded}
+                        expanded={expandedItems.has(actionItem.id)}
+                      />
+                    ))}
+                  </div>
+                ) : analysisResult ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
                       <div className="text-6xl mb-4">🎯</div>
                       <h3 className="text-h3 text-gray-900 mb-2">
-                        Phase 8 구현 예정
+                        액션 아이템이 없습니다
                       </h3>
                       <p className="text-gray-600">
-                        키워드 분석 기반 액션 아이템 자동 생성 기능이<br />
-                        구현될 예정입니다.
+                        {actionFilters.priority !== 'all' || actionFilters.category !== 'all' 
+                          ? '선택한 필터에 해당하는 액션 아이템이 없습니다.'
+                          : '분석된 키워드에서 액션 아이템을 생성할 수 없었습니다.'
+                        }
                       </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <div className="text-6xl mb-4">⏳</div>
+                      <p className="text-gray-600">분석 결과를 불러오는 중...</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             )}
           </div>
 
@@ -364,6 +474,41 @@ export default function ResultsPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* 액션 아이템 요약 */}
+                  {actionStats.totalItems > 0 && (
+                    <>
+                      <hr className="border-gray-200" />
+                      
+                      <div>
+                        <div className="text-caption text-gray-500 mb-1">🎯 액션 아이템</div>
+                        <div className="space-y-2 text-body2">
+                          <div className="flex justify-between">
+                            <span>총 항목</span>
+                            <span className="font-medium">{actionStats.totalItems}개</span>
+                          </div>
+                          {actionStats.byPriority.P1 > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-red-600">🚨 긴급</span>
+                              <span className="font-medium text-red-600">{actionStats.byPriority.P1}개</span>
+                            </div>
+                          )}
+                          {actionStats.byPriority.P2 > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-yellow-600">⚠️ 중요</span>
+                              <span className="font-medium text-yellow-600">{actionStats.byPriority.P2}개</span>
+                            </div>
+                          )}
+                          {actionStats.byPriority.P3 > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-blue-600">💡 제안</span>
+                              <span className="font-medium text-blue-600">{actionStats.byPriority.P3}개</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
