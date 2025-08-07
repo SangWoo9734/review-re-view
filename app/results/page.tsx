@@ -13,6 +13,8 @@ import { useWordCloud, WordCloudData } from '@/hooks/useWordCloud';
 import { ActionItemCard } from '@/components/features/ActionItemCard';
 import { useActionItems } from '@/hooks/useActionItems';
 import { getCategoryLabel, getCategoryChipVariant, CATEGORY_LABELS_SIDEBAR } from '@/lib/constants/categories';
+import { calculateTotalComments, calculateAverageCommentsPerPR } from '@/lib/utils/calculators';
+import { formatTFIDF, formatNumber } from '@/lib/utils/formatters';
 import type { KeywordCategory } from '@/lib/textAnalysis';
 
 type TabType = 'wordcloud' | 'keywords' | 'actions';
@@ -68,7 +70,7 @@ export default function ResultsPage() {
     );
   }
 
-  const totalComments = analyzedPRs.reduce((acc, pr) => acc + (pr.commentCount || 0), 0) || 47;
+  const totalComments = calculateTotalComments(analyzedPRs);
 
   return (
     <ProtectedRoute>
@@ -187,7 +189,7 @@ export default function ResultsPage() {
                               </Chip>
                             </div>
                             <div className="text-sm text-gray-600">
-                              빈도: {keyword.frequency}회 | TF-IDF: {keyword.tfidf.toFixed(3)}
+                              빈도: {keyword.frequency}회 | TF-IDF: {formatTFIDF(keyword.tfidf)}
                             </div>
                           </div>
                         </div>
@@ -391,7 +393,7 @@ export default function ResultsPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>평균</span>
-                        <span className="font-medium">{(totalComments / analyzedPRs.length).toFixed(1)}개/PR</span>
+                        <span className="font-medium">{calculateAverageCommentsPerPR(analyzedPRs)}개/PR</span>
                       </div>
                     </div>
                   </div>
@@ -403,11 +405,11 @@ export default function ResultsPage() {
                     <div className="space-y-2 text-body2">
                       <div className="flex justify-between">
                         <span>전체 단어</span>
-                        <span className="font-medium">{analysisResult.totalWords.toLocaleString()}개</span>
+                        <span className="font-medium">{formatNumber(analysisResult.totalWords)}개</span>
                       </div>
                       <div className="flex justify-between">
                         <span>고유 단어</span>
-                        <span className="font-medium">{analysisResult.uniqueWords.toLocaleString()}개</span>
+                        <span className="font-medium">{formatNumber(analysisResult.uniqueWords)}개</span>
                       </div>
                       <div className="flex justify-between">
                         <span>키워드</span>
