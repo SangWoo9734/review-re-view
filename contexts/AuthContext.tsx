@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { AuthState, User, getClientAuthState, logout as logoutUser } from '@/lib/auth';
+import { authService } from '@/lib/api/authService';
 
 interface AuthContextType extends AuthState {
   loading: boolean;
@@ -30,20 +31,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const login = () => {
-    // GitHub OAuth URL로 리다이렉트
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/api/auth/github`;
-    const scope = 'repo user:email';
-    const state = Math.random().toString(36).substring(2, 15);
-
-    const params = new URLSearchParams({
-      client_id: clientId!,
-      redirect_uri: redirectUri,
-      scope,
-      state,
-    });
-
-    window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+    // GitHub OAuth 로그인 서비스 사용
+    authService.redirectToGitHubAuth();
   };
 
   const logout = async () => {
