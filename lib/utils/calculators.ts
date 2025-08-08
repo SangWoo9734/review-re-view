@@ -65,7 +65,7 @@ export function calculateAnalysisStats(analysisResult: AnalysisResult) {
 /**
  * 우선순위별 액션 아이템 개수 계산
  */
-export function calculatePriorityDistribution(actionItems: any[]) {
+export function calculatePriorityDistribution(actionItems: { priority: string }[]) {
   const distribution = {
     P1: 0,
     P2: 0,
