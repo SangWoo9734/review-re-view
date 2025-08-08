@@ -12,6 +12,7 @@ import { ErrorState, EmptyState } from '@/components/ui/ErrorState';
 import { RepositoryCard } from '@/components/features/RepositoryCard';
 import { PullRequestCard } from '@/components/features/PullRequestCard';
 import { Repository, PullRequest } from '@/types/github';
+import { PRSelectionService } from '@/lib/services/prSelectionService';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -48,10 +49,12 @@ export default function Dashboard() {
   const repositories = repositoriesData?.repositories || [];
   const allPullRequests = pullRequestsData?.pulls || [];
   
-  // 내 PR만 필터링하거나 모든 PR 표시
-  const pullRequests = showOnlyMyPRs 
-    ? allPullRequests.filter(pr => pr.author.login === user?.login)
-    : allPullRequests;
+  // 내 PR만 필터링하거나 모든 PR 표시 (비즈니스 로직 서비스 사용)
+  const pullRequests = PRSelectionService.filterPRsByOwnership(
+    allPullRequests, 
+    user?.login || '', 
+    showOnlyMyPRs
+  );
 
   const handleRepositorySelect = (repo: Repository) => {
     setSelectedRepo(repo);
@@ -60,13 +63,13 @@ export default function Dashboard() {
 
   const handlePRSelect = (pr: PullRequest, selected: boolean) => {
     if (selected) {
-      // 최대 5개 제한
-      if (selectedPRs.length >= 5) {
-        return;
+      const newSelection = PRSelectionService.addPRToSelection(selectedPRs, pr);
+      if (newSelection) {
+        setSelectedPRs(newSelection);
       }
-      setSelectedPRs([...selectedPRs, pr]);
     } else {
-      setSelectedPRs(selectedPRs.filter(selectedPR => selectedPR.id !== pr.id));
+      const newSelection = PRSelectionService.removePRFromSelection(selectedPRs, pr);
+      setSelectedPRs(newSelection);
     }
   };
 
@@ -74,7 +77,8 @@ export default function Dashboard() {
     return selectedPRs.some(selectedPR => selectedPR.id === pr.id);
   };
 
-  const canSelectMore = selectedPRs.length < 5;
+  const selectionStats = PRSelectionService.getSelectionStats(selectedPRs);
+  const canSelectMore = selectionStats.canSelectMore;
 
   const handleStartAnalysis = () => {
     if (selectedPRs.length === 0) return;

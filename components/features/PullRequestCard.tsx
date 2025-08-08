@@ -2,6 +2,7 @@ import { PullRequest } from '@/types/github';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { cn } from '@/lib/utils';
+import { PRDisplayService } from '@/lib/services/prDisplayService';
 
 interface PullRequestCardProps {
   pullRequest: PullRequest;
@@ -10,28 +11,19 @@ interface PullRequestCardProps {
   disabled?: boolean;
 }
 
-const stateConfig = {
-  open: {
-    variant: 'github-open' as const,
-    label: 'Open',
-  },
-  merged: {
-    variant: 'github-merged' as const,
-    label: 'Merged', 
-  },
-  closed: {
-    variant: 'github-closed' as const,
-    label: 'Closed',
-  },
-};
-
 export function PullRequestCard({ 
   pullRequest, 
   onSelect, 
   selected = false,
   disabled = false
 }: PullRequestCardProps) {
-  const createdAt = new Date(pullRequest.createdAt).toLocaleDateString('ko-KR');
+  const displayMetadata = PRDisplayService.createDisplayMetadata(pullRequest);
+  const cardClasses = PRDisplayService.generateCardClasses(
+    selected,
+    disabled,
+    displayMetadata.urgencyLevel,
+    !!onSelect
+  );
   
   const handleClick = () => {
     if (disabled) return;
@@ -40,12 +32,7 @@ export function PullRequestCard({
 
   return (
     <Card 
-      className={cn(
-        'transition-all duration-200',
-        !disabled && onSelect && 'cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5',
-        selected && 'ring-2 ring-primary-500 bg-primary-50',
-        disabled && 'opacity-50 cursor-not-allowed'
-      )}
+      className={cn(cardClasses)}
       onClick={handleClick}
     >
       <CardContent className="p-4">
@@ -77,17 +64,22 @@ export function PullRequestCard({
                 <span>{pullRequest.author.login}</span>
               </div>
               
-              <span>📅 {createdAt}</span>
+              <span>📅 {displayMetadata.formattedDate}</span>
+              <span>⏰ {displayMetadata.relativeTime}</span>
             </div>
 
-            {/* 상태 뱃지 */}
+            {/* 상태 뱃지 및 코멘트 정보 */}
             <div className="flex items-center gap-2">
               <Chip 
-                variant={stateConfig[pullRequest.state].variant}
+                variant={displayMetadata.stateConfig.variant}
                 size="sm"
               >
-                {stateConfig[pullRequest.state].label}
+                {displayMetadata.stateConfig.iconEmoji} {displayMetadata.stateConfig.label}
               </Chip>
+              
+              <span className="text-caption text-gray-500">
+                {displayMetadata.commentsSummary}
+              </span>
               
               <span className="text-caption text-gray-500">
                 #{pullRequest.number}
