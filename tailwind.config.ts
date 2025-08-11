@@ -9,18 +9,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary Colors (GitHub 스타일)
+        // Primary Colors (메인 컬러 #5D5FEF 기반)
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#0969da', // GitHub 파란색
-          600: '#0550ae',
-          700: '#044289',
-          800: '#1e3a8a',
-          900: '#1e40af',
+          50: '#f0f0ff',
+          100: '#e5e5ff',
+          200: '#d1d1ff',
+          300: '#b3b3ff',
+          400: '#9999ff',
+          500: '#5D5FEF', // 메인 컬러
+          600: '#4a4dd6',
+          700: '#3b3eb8',
+          800: '#2f3294',
+          900: '#282a7a',
         },
         
         // Gray Scale

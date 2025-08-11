@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --foreground: #1e293b;
 }
 
 @theme inline {
@@ -10,6 +10,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Primary colors based on #5D5FEF */
+  --color-primary-50: #f0f0ff;
+  --color-primary-100: #e5e5ff;
+  --color-primary-200: #d1d1ff;
+  --color-primary-300: #b3b3ff;
+  --color-primary-400: #9999ff;
+  --color-primary-500: #5D5FEF;
+  --color-primary-600: #4a4dd6;
+  --color-primary-700: #3b3eb8;
+  --color-primary-800: #2f3294;
+  --color-primary-900: #282a7a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +34,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 /* Line clamp utility */

@@ -1,58 +1,59 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRepositories, usePullRequests } from '@/hooks/useGitHub';
-import { Button } from '@/components/ui/Button';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { LoadingState } from '@/components/ui/LoadingSpinner';
-import { ErrorState, EmptyState } from '@/components/ui/ErrorState';
-import { RepositoryCard } from '@/components/features/RepositoryCard';
-import { PullRequestCard } from '@/components/features/PullRequestCard';
-import { Repository, PullRequest } from '@/types/github';
-import { PRSelectionService } from '@/lib/services/prSelectionService';
+import { PullRequestCard } from "@/components/features/PullRequestCard";
+import { RepositoryCard } from "@/components/features/RepositoryCard";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Button } from "@/components/ui/Button";
+import { EmptyState, ErrorState } from "@/components/ui/ErrorState";
+import { LoadingState } from "@/components/ui/LoadingSpinner";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePullRequests, useRepositories } from "@/hooks/useGitHub";
+import { PRSelectionService } from "@/lib/services/prSelectionService";
+import { PullRequest, Repository } from "@/types/github";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
   const [showOnlyMyPRs, setShowOnlyMyPRs] = useState(true); // 기본값을 내 PR만 보기로 설정
 
-  const { 
-    data: repositoriesData, 
-    isLoading: reposLoading, 
-    error: reposError, 
-    refetch: refetchRepos 
+  const {
+    data: repositoriesData,
+    isLoading: reposLoading,
+    error: reposError,
+    refetch: refetchRepos,
   } = useRepositories({
     search: searchTerm || undefined,
     enabled: !!user,
   });
 
-  const { 
-    data: pullRequestsData, 
-    isLoading: prsLoading, 
-    error: prsError, 
-    refetch: refetchPRs 
+  const {
+    data: pullRequestsData,
+    isLoading: prsLoading,
+    error: prsError,
+    refetch: refetchPRs,
   } = usePullRequests(
-    selectedRepo?.owner.login || '',
-    selectedRepo?.name || '',
+    selectedRepo?.owner.login || "",
+    selectedRepo?.name || "",
     {
       enabled: !!selectedRepo,
-      state: 'all',
+      state: "all",
     }
   );
 
   const repositories = repositoriesData?.repositories || [];
   const allPullRequests = pullRequestsData?.pulls || [];
-  
+
   // 내 PR만 필터링하거나 모든 PR 표시 (비즈니스 로직 서비스 사용)
   const pullRequests = PRSelectionService.filterPRsByOwnership(
-    allPullRequests, 
-    user?.login || '', 
+    allPullRequests,
+    user?.login || "",
     showOnlyMyPRs
   );
 
@@ -68,13 +69,16 @@ export default function Dashboard() {
         setSelectedPRs(newSelection);
       }
     } else {
-      const newSelection = PRSelectionService.removePRFromSelection(selectedPRs, pr);
+      const newSelection = PRSelectionService.removePRFromSelection(
+        selectedPRs,
+        pr
+      );
       setSelectedPRs(newSelection);
     }
   };
 
   const isPRSelected = (pr: PullRequest) => {
-    return selectedPRs.some(selectedPR => selectedPR.id === pr.id);
+    return selectedPRs.some((selectedPR) => selectedPR.id === pr.id);
   };
 
   const selectionStats = PRSelectionService.getSelectionStats(selectedPRs);
@@ -82,7 +86,7 @@ export default function Dashboard() {
 
   const handleStartAnalysis = () => {
     if (selectedPRs.length === 0) return;
-    
+
     // 선택된 PR 정보를 URL 파라미터로 전달
     const prsParam = encodeURIComponent(JSON.stringify(selectedPRs));
     router.push(`/analysis?prs=${prsParam}`);
@@ -90,34 +94,35 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div
+        className="min-h-screen"
+        style={{
+          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+        }}
+      >
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 py-4">
+        <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100 px-4 py-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-h3 text-gray-900">
-                🏠 Review-Review
-              </h1>
+              <h1 className="text-h3 text-gray-900">🏠 Review-Review</h1>
             </div>
-            
+
             <div className="flex items-center gap-4">
               {user && (
                 <div className="flex items-center gap-3">
-                  <img
+                  <Image
+                    width={32}
+                    height={32}
                     src={user.avatar_url}
                     alt={user.login}
-                    className="w-8 h-8 rounded-full ring-2 ring-primary-100"
+                    className="rounded-full ring-2 ring-primary-100"
                   />
                   <span className="text-body2 font-medium text-gray-700">
                     {user.login}
                   </span>
                 </div>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={logout}
-              >
+              <Button variant="outline" size="sm" onClick={logout}>
                 로그아웃
               </Button>
             </div>
@@ -127,16 +132,16 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto flex h-[calc(100vh-152px)] relative">
           {/* Sidebar - Repository List */}
-          <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
+          <div className="w-80 bg-white/90 backdrop-blur-sm border-r border-gray-100 flex flex-col shadow-sm">
+            <div className="p-4 border-b border-gray-100">
               <h2 className="text-h3 mb-4">📁 레포지토리</h2>
               <SearchInput
                 placeholder="레포지토리 검색..."
                 onSearch={setSearchTerm}
-                onClear={() => setSearchTerm('')}
+                onClear={() => setSearchTerm("")}
               />
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4">
               {reposLoading && (
                 <LoadingState>레포지토리를 불러오는 중...</LoadingState>
@@ -153,7 +158,11 @@ export default function Dashboard() {
               {!reposLoading && !reposError && repositories.length === 0 && (
                 <EmptyState
                   title={searchTerm ? "검색 결과 없음" : "레포지토리 없음"}
-                  message={searchTerm ? `"${searchTerm}"에 대한 검색 결과가 없습니다.` : "접근 가능한 레포지토리가 없습니다."}
+                  message={
+                    searchTerm
+                      ? `"${searchTerm}"에 대한 검색 결과가 없습니다.`
+                      : "접근 가능한 레포지토리가 없습니다."
+                  }
                   icon="📂"
                 />
               )}
@@ -174,11 +183,11 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content - PR List */}
-          <div className="flex-1 flex flex-col bg-white">
+          <div className="flex-1 flex flex-col bg-white/90 backdrop-blur-sm">
             {selectedRepo ? (
               <div className="flex flex-col h-full">
                 {/* PR List Header */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h2 className="text-h2 text-gray-900 mb-2">
@@ -188,7 +197,7 @@ export default function Dashboard() {
                         분석할 PR을 선택하세요 (최대 5개)
                       </p>
                     </div>
-                    
+
                     {/* Filter Toggle */}
                     <div className="flex items-center gap-3">
                       <span className="text-body2 text-gray-600">
@@ -200,33 +209,28 @@ export default function Dashboard() {
                           setSelectedPRs([]); // 필터 변경시 선택 초기화
                         }}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          showOnlyMyPRs ? 'bg-primary-500' : 'bg-gray-300'
+                          showOnlyMyPRs ? "bg-primary-500" : "bg-gray-300"
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            showOnlyMyPRs ? 'translate-x-6' : 'translate-x-1'
+                            showOnlyMyPRs ? "translate-x-6" : "translate-x-1"
                           }`}
                         />
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* PR Count Info */}
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>
-                      전체 PR: {allPullRequests.length}개
-                    </span>
+                    <span>전체 PR: {allPullRequests.length}개</span>
                     {showOnlyMyPRs && (
-                      <span>
-                        내 PR: {pullRequests.length}개
-                      </span>
+                      <span>내 PR: {pullRequests.length}개</span>
                     )}
-                    {!showOnlyMyPRs && pullRequests.length !== allPullRequests.length && (
-                      <span>
-                        표시된 PR: {pullRequests.length}개
-                      </span>
-                    )}
+                    {!showOnlyMyPRs &&
+                      pullRequests.length !== allPullRequests.length && (
+                        <span>표시된 PR: {pullRequests.length}개</span>
+                      )}
                   </div>
                 </div>
 
@@ -246,10 +250,12 @@ export default function Dashboard() {
 
                   {!prsLoading && !prsError && pullRequests.length === 0 && (
                     <EmptyState
-                      title={showOnlyMyPRs ? "내 PR이 없습니다" : "PR이 없습니다"}
+                      title={
+                        showOnlyMyPRs ? "내 PR이 없습니다" : "PR이 없습니다"
+                      }
                       message={
-                        showOnlyMyPRs 
-                          ? allPullRequests.length > 0 
+                        showOnlyMyPRs
+                          ? allPullRequests.length > 0
                             ? "이 레포지토리에 내가 생성한 PR이 없습니다. 필터를 해제하여 다른 사람의 PR도 확인해보세요."
                             : "이 레포지토리에는 PR이 없습니다."
                           : "이 레포지토리에는 분석할 수 있는 PR이 없습니다."
@@ -287,18 +293,16 @@ export default function Dashboard() {
 
         {/* Bottom Action Bar */}
         {selectedPRs.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-xl">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <span className="text-body1 font-medium text-gray-900">
                     선택됨: {selectedPRs.length}개 PR
                   </span>
-                  <span className="text-body2 text-gray-500">
-                    (최대 5개)
-                  </span>
+                  <span className="text-body2 text-gray-500">(최대 5개)</span>
                 </div>
-                
+
                 <Button
                   size="lg"
                   onClick={handleStartAnalysis}
