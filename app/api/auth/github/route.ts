@@ -7,7 +7,7 @@ const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const state = searchParams.get('state');
+  const _state = searchParams.get('state');
 
   if (!code) {
     return NextResponse.redirect(`${NEXTAUTH_URL}/?error=missing_code`);

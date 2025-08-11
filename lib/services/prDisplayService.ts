@@ -265,7 +265,7 @@ export class PRDisplayService {
       if (filters.keyword) {
         const keyword = filters.keyword.toLowerCase();
         const titleMatch = pr.title.toLowerCase().includes(keyword);
-        const bodyMatch = pr.body?.toLowerCase().includes(keyword);
+        const bodyMatch = false; // PullRequest 타입에 body 없음
         if (!titleMatch && !bodyMatch) return false;
       }
 

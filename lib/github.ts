@@ -1,13 +1,15 @@
 import { Octokit } from '@octokit/rest';
 import { 
-  GitHubRepository, 
-  GitHubPullRequest, 
   GitHubIssueComment, 
   GitHubReviewComment,
   Repository,
   PullRequest,
   PRComment
 } from '@/types/github';
+
+// Octokit 타입 사용 - any로 임시 해결
+type OctokitRepository = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+type OctokitPullRequest = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 // GitHub API 클라이언트 생성
 export function createGitHubClient(token: string) {
@@ -37,7 +39,7 @@ export async function getServerGitHubClient(request: Request): Promise<Octokit |
 }
 
 // GitHub 데이터를 앱 형식으로 변환하는 유틸리티 함수들
-export function transformRepository(repo: GitHubRepository): Repository {
+export function transformRepository(repo: OctokitRepository): Repository {
   return {
     id: repo.id,
     name: repo.name,
@@ -47,7 +49,7 @@ export function transformRepository(repo: GitHubRepository): Repository {
     language: repo.language,
     stars: repo.stargazers_count,
     forks: repo.forks_count,
-    updatedAt: repo.updated_at,
+    updatedAt: repo.updated_at || new Date().toISOString(),
     owner: {
       login: repo.owner.login,
       avatarUrl: repo.owner.avatar_url,
@@ -55,7 +57,7 @@ export function transformRepository(repo: GitHubRepository): Repository {
   };
 }
 
-export function transformPullRequest(pr: GitHubPullRequest, owner: string, repo: string): PullRequest {
+export function transformPullRequest(pr: OctokitPullRequest, owner: string, repo: string): PullRequest {
   // merged_at이 있으면 merged, 없고 state가 closed면 closed, 그 외엔 open
   const state = pr.merged_at ? 'merged' : pr.state as 'open' | 'closed';
   
@@ -70,8 +72,8 @@ export function transformPullRequest(pr: GitHubPullRequest, owner: string, repo:
     createdAt: pr.created_at,
     updatedAt: pr.updated_at,
     author: {
-      login: pr.user.login,
-      avatarUrl: pr.user.avatar_url,
+      login: pr.user?.login || 'unknown',
+      avatarUrl: pr.user?.avatar_url || '',
     },
     commentCount,
     repository: {
@@ -114,19 +116,20 @@ export class GitHubAPIError extends Error {
   constructor(
     message: string,
     public status: number,
-    public response?: any
+    public response?: unknown
   ) {
     super(message);
     this.name = 'GitHubAPIError';
   }
 }
 
-export function handleGitHubAPIError(error: any): never {
-  if (error.status) {
+export function handleGitHubAPIError(error: unknown): never {
+  if (error && typeof error === 'object' && 'status' in error) {
+    const apiError = error as { status: number; message?: string; response?: unknown };
     throw new GitHubAPIError(
-      error.message || 'GitHub API Error',
-      error.status,
-      error.response
+      apiError.message || 'GitHub API Error',
+      apiError.status,
+      apiError.response
     );
   }
   throw error;

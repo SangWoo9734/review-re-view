@@ -1,9 +1,11 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+export type ChipVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'github-open' | 'github-merged' | 'github-closed';
+
 interface ChipProps {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'github-open' | 'github-merged' | 'github-closed';
+  variant?: ChipVariant;
   size?: 'sm' | 'md';
   className?: string;
 }

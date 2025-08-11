@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import cloud from 'd3-cloud';
+// import cloud from 'd3-cloud'; // Unused import
 import { WordCloudData } from '@/hooks/useWordCloud';
 
 interface WordCloudProps {
@@ -67,7 +67,7 @@ export function WordCloud({
       .append('g')
       .attr('class', 'tag-group')
       .style('cursor', onWordClick ? 'pointer' : 'default')
-      .style('opacity', 0);
+      .style('opacity', 0) as d3.Selection<SVGGElement, CloudWord, SVGSVGElement, unknown>;
 
     tagElements.each(function(d, i) {
       const group = d3.select(this);
@@ -95,7 +95,7 @@ export function WordCloud({
         .attr('width', tagWidth)
         .attr('height', tagHeight)
         .attr('rx', tagHeight / 2) // 완전히 둥근 형태
-        .style('fill', d => {
+        .style('fill', (d: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const color = d3.color(d.color);
           if (color) {
             color.opacity = 0.15;
@@ -103,7 +103,7 @@ export function WordCloud({
           }
           return d.color;
         })
-        .style('stroke', d => d.color)
+        .style('stroke', (d: any) => d.color) // eslint-disable-line @typescript-eslint/no-explicit-any
         .style('stroke-width', '2')
         .style('stroke-opacity', 0.4)
         .style('filter', 'drop-shadow(0 3px 6px rgba(0,0,0,0.1))');
@@ -116,12 +116,12 @@ export function WordCloud({
         .style('font-family', 'Inter, system-ui, sans-serif')
         .style('font-weight', '600')
         .style('font-size', `${fontSize}px`)
-        .style('fill', d => d.color)
+        .style('fill', (d: any) => d.color) // eslint-disable-line @typescript-eslint/no-explicit-any
         .style('user-select', 'none')
         .style('text-shadow', '0 1px 2px rgba(0,0,0,0.1)')
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .text(d => d.text);
+        .text((d: any) => d.text); // eslint-disable-line @typescript-eslint/no-explicit-any
       
       currentX += tagWidth + 10;
     });
@@ -129,7 +129,7 @@ export function WordCloud({
     // 클릭 이벤트 및 호버 효과
     if (onWordClick) {
       tagElements
-        .on('click', function(_: unknown, d: CloudWord) {
+        .on('click', function(_: any, d: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
           onWordClick(d);
         })
         .on('mouseenter', function(this: SVGGElement) {
@@ -166,7 +166,7 @@ export function WordCloud({
 
     // 툴팁을 위한 title 추가
     tagElements.append('title')
-      .text(d => `${d.text}\n빈도: ${d.frequency}회\n중요도: ${d.tfidf.toFixed(2)}\n카테고리: ${getCategoryLabel(d.category)}`);
+      .text((d: any) => `${d.text}\n빈도: ${d.frequency}회\n중요도: ${d.tfidf.toFixed(2)}\n카테고리: ${getCategoryLabel(d.category)}`); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // 애니메이션
     tagElements

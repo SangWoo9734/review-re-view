@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -47,7 +47,7 @@ const analysisSteps: AnalysisStep[] = [
   },
 ];
 
-export default function AnalysisPage() {
+function AnalysisPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
@@ -108,6 +108,11 @@ export default function AnalysisPage() {
   // 진행 상황에 따른 단계 상태 업데이트
   const currentSteps = analysisSteps.map((step, index) => {
     if (!progress) return { ...step, status: 'pending' as const };
+    
+    // 에러가 있으면 현재 단계를 에러로 표시
+    if (error && index + 1 === progress.step) {
+      return { ...step, status: 'error' as const };
+    }
     
     if (index + 1 < progress.step) {
       return { ...step, status: 'completed' as const };
@@ -244,5 +249,13 @@ export default function AnalysisPage() {
         </main>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AnalysisPageContent />
+    </Suspense>
   );
 }

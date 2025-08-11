@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerGitHubClient, transformRepository, handleGitHubAPIError } from '@/lib/github';
+import { getServerGitHubClient, transformRepository } from '@/lib/github';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       // 검색어가 있으면 search API 사용
       const response = await client.search.repos({
         q: `user:@me ${search}`,
-        sort: sort as 'updated' | 'created' | 'pushed',
+        sort: sort as 'updated' | 'stars' | 'forks',
         order: 'desc',
         page,
         per_page: perPage,
@@ -47,18 +47,22 @@ export async function GET(request: NextRequest) {
       total: search ? undefined : transformedRepos.length, // search API는 total_count 제공하지만 일반 API는 안함
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('GitHub repositories API error:', error);
     
-    if (error.status === 401) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    if (error.status === 403) {
-      return NextResponse.json({ 
-        error: 'Rate limit exceeded',
-        message: 'GitHub API rate limit exceeded. Please try again later.'
-      }, { status: 403 });
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status: number; message?: string };
+      
+      if (apiError.status === 401) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
+      
+      if (apiError.status === 403) {
+        return NextResponse.json({ 
+          error: 'Rate limit exceeded',
+          message: 'GitHub API rate limit exceeded. Please try again later.'
+        }, { status: 403 });
+      }
     }
 
     return NextResponse.json(

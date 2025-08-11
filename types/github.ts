@@ -14,8 +14,8 @@ export interface GitHubRepository {
   language: string | null;
   stargazers_count: number;
   forks_count: number;
-  updated_at: string;
-  created_at: string;
+  updated_at: string | null;
+  created_at: string | null;
   default_branch: string;
 }
 
@@ -23,14 +23,14 @@ export interface GitHubPullRequest {
   id: number;
   number: number;
   title: string;
-  state: 'open' | 'closed';
+  state: string;
   merged_at: string | null;
   created_at: string;
   updated_at: string;
   user: {
     login: string;
     avatar_url: string;
-  };
+  } | null;
   head: {
     ref: string;
     sha: string;
@@ -40,11 +40,11 @@ export interface GitHubPullRequest {
     sha: string;
   };
   html_url: string;
-  comments: number;
-  review_comments: number;
-  commits: number;
-  additions: number;
-  deletions: number;
+  comments?: number;
+  review_comments?: number;
+  commits?: number;
+  additions?: number;
+  deletions?: number;
 }
 
 export interface GitHubIssueComment {

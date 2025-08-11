@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerGitHubClient, transformPullRequest, handleGitHubAPIError } from '@/lib/github';
+import { getServerGitHubClient, transformPullRequest } from '@/lib/github';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,25 +43,29 @@ export async function GET(request: NextRequest) {
       total: transformedPRs.length,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('GitHub pulls API error:', error);
     
-    if (error.status === 401) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    if (error.status === 403) {
-      return NextResponse.json({ 
-        error: 'Rate limit exceeded',
-        message: 'GitHub API rate limit exceeded. Please try again later.'
-      }, { status: 403 });
-    }
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status: number; message?: string };
+      
+      if (apiError.status === 401) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
+      
+      if (apiError.status === 403) {
+        return NextResponse.json({ 
+          error: 'Rate limit exceeded',
+          message: 'GitHub API rate limit exceeded. Please try again later.'
+        }, { status: 403 });
+      }
 
-    if (error.status === 404) {
-      return NextResponse.json({ 
-        error: 'Repository not found',
-        message: 'Repository not found or you do not have access to it.'
-      }, { status: 404 });
+      if (apiError.status === 404) {
+        return NextResponse.json({ 
+          error: 'Repository not found',
+          message: 'Repository not found or you do not have access to it.'
+        }, { status: 404 });
+      }
     }
 
     return NextResponse.json(

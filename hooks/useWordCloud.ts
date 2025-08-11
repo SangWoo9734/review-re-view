@@ -18,9 +18,9 @@ export function useWordCloud(analysisResult: AnalysisResult | null): {
       };
     }
 
-    // 모든 PR 댓글 텍스트 결합
-    const allComments = analysisResult.comments
-      .map(comment => comment.body)
+    // 키워드 데이터에서 텍스트 추출 (contexts 사용)
+    const allComments = analysisResult.keywords
+      .flatMap(keyword => keyword.contexts)
       .join(' ');
 
     // 코드 리뷰 특화 키워드 분석 실행
