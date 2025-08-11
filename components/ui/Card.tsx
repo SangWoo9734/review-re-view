@@ -15,9 +15,9 @@ export function Card({
   return (
     <div
       className={cn(
-        "bg-white rounded-lg p-6 border border-gray-200 shadow-card",
+        "bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300",
         hover &&
-          "hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200",
+          "hover:shadow-xl hover:-translate-y-1 hover:border-primary-200",
         className
       )}
       {...props}
@@ -33,7 +33,7 @@ interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function CardHeader({ className, children, ...props }: CardHeaderProps) {
   return (
-    <div className={cn("flex flex-col space-y-1.5 pb-4", className)} {...props}>
+    <div className={cn("flex flex-col space-y-2 pb-6", className)} {...props}>
       {children}
     </div>
   );
@@ -47,7 +47,7 @@ export function CardTitle({ className, children, ...props }: CardTitleProps) {
   return (
     <h3
       className={cn(
-        "text-h3 font-semibold leading-none tracking-tight",
+        "text-h3 font-bold leading-tight tracking-tight text-gray-900",
         className
       )}
       {...props}

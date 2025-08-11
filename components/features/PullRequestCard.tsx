@@ -1,8 +1,9 @@
-import { PullRequest } from '@/types/github';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Chip } from '@/components/ui/Chip';
-import { cn } from '@/lib/utils';
-import { PRDisplayService } from '@/lib/services/prDisplayService';
+import { Card, CardContent } from "@/components/ui/Card";
+import { Chip } from "@/components/ui/Chip";
+import { PRDisplayService } from "@/lib/services/prDisplayService";
+import { cn } from "@/lib/utils";
+import { PullRequest } from "@/types/github";
+import Image from "next/image";
 
 interface PullRequestCardProps {
   pullRequest: PullRequest;
@@ -11,11 +12,11 @@ interface PullRequestCardProps {
   disabled?: boolean;
 }
 
-export function PullRequestCard({ 
-  pullRequest, 
-  onSelect, 
+export function PullRequestCard({
+  pullRequest,
+  onSelect,
   selected = false,
-  disabled = false
+  disabled = false,
 }: PullRequestCardProps) {
   const displayMetadata = PRDisplayService.createDisplayMetadata(pullRequest);
   const cardClasses = PRDisplayService.generateCardClasses(
@@ -24,18 +25,15 @@ export function PullRequestCard({
     displayMetadata.urgencyLevel,
     !!onSelect
   );
-  
+
   const handleClick = () => {
     if (disabled) return;
     onSelect?.(!selected);
   };
 
   return (
-    <Card 
-      className={cn(cardClasses)}
-      onClick={handleClick}
-    >
-      <CardContent className="p-4">
+    <Card className={cn(cardClasses)} onClick={handleClick}>
+      <CardContent>
         <div className="flex items-start gap-3">
           {onSelect && (
             <input
@@ -52,38 +50,34 @@ export function PullRequestCard({
             <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
               {pullRequest.title}
             </h3>
+            <span className="text-caption text-gray-500">
+              - #{pullRequest.number}
+            </span>
 
             {/* 메타 정보 */}
-            <div className="flex items-center gap-4 text-body2 text-gray-600 mb-3">
+            <div className="flex justify-between items-center gap-4 text-body2 text-gray-600 mb-3">
               <div className="flex items-center gap-1">
-                <img
+                <Image
+                  width={16}
+                  height={16}
                   src={pullRequest.author.avatarUrl}
                   alt={pullRequest.author.login}
-                  className="w-4 h-4 rounded-full"
+                  className="rounded-full"
                 />
                 <span>{pullRequest.author.login}</span>
               </div>
-              
-              <span>📅 {displayMetadata.formattedDate}</span>
-              <span>⏰ {displayMetadata.relativeTime}</span>
+              <div className="flex items-center gap-2">
+                <p>📅 {displayMetadata.formattedDate}</p>
+                <p>⏰ {displayMetadata.relativeTime}</p>
+              </div>
             </div>
 
             {/* 상태 뱃지 및 코멘트 정보 */}
             <div className="flex items-center gap-2">
-              <Chip 
-                variant={displayMetadata.stateConfig.variant}
-                size="sm"
-              >
-                {displayMetadata.stateConfig.iconEmoji} {displayMetadata.stateConfig.label}
+              <Chip variant={displayMetadata.stateConfig.variant} size="sm">
+                {displayMetadata.stateConfig.iconEmoji}{" "}
+                {displayMetadata.stateConfig.label}
               </Chip>
-              
-              <span className="text-caption text-gray-500">
-                {displayMetadata.commentsSummary}
-              </span>
-              
-              <span className="text-caption text-gray-500">
-                #{pullRequest.number}
-              </span>
             </div>
           </div>
         </div>
