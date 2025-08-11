@@ -57,11 +57,25 @@ export function useInfiniteScroll(
     enabled: !!hasNextPage && !isFetchingNextPage,
   });
 
+  const fetchNextPageRef = useRef(fetchNextPage);
+  const lastFetchedRef = useRef<boolean>(false);
+
+  fetchNextPageRef.current = fetchNextPage;
+
   useEffect(() => {
     if (isIntersecting && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      // 이미 페치가 트리거되었으면 중복 실행 방지
+      if (lastFetchedRef.current) return;
+      
+      lastFetchedRef.current = true;
+      fetchNextPageRef.current();
+      
+      // 페치 완료 후 리셋 (다음 페이지 로딩 가능)
+      setTimeout(() => {
+        lastFetchedRef.current = false;
+      }, 1000);
     }
-  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [isIntersecting, hasNextPage, isFetchingNextPage]);
 
   return { ref };
 }
