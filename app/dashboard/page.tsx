@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState, ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingSpinner";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { AIToggle, useAISettings } from "@/components/ui/AIToggle";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePullRequests, useRepositories } from "@/hooks/useGitHub";
+import { useInfinitePullRequests, useInfiniteRepositories } from "@/hooks/useGitHub";
+import { useInfiniteScroll } from "@/hooks/useIntersectionObserver";
 import { PRSelectionService } from "@/lib/services/prSelectionService";
 import { PullRequest, Repository } from "@/types/github";
 import Image from "next/image";
@@ -18,6 +20,7 @@ import { useState } from "react";
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { enabled: aiEnabled, toggle: toggleAI } = useAISettings();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPRs, setSelectedPRs] = useState<PullRequest[]>([]);
@@ -27,8 +30,11 @@ export default function Dashboard() {
     data: repositoriesData,
     isLoading: reposLoading,
     error: reposError,
+    fetchNextPage: fetchNextRepos,
+    hasNextPage: hasNextRepos,
+    isFetchingNextPage: isFetchingNextRepos,
     refetch: refetchRepos,
-  } = useRepositories({
+  } = useInfiniteRepositories({
     search: searchTerm || undefined,
     enabled: !!user,
   });
@@ -37,8 +43,11 @@ export default function Dashboard() {
     data: pullRequestsData,
     isLoading: prsLoading,
     error: prsError,
+    fetchNextPage: fetchNextPRs,
+    hasNextPage: hasNextPRs,
+    isFetchingNextPage: isFetchingNextPRs,
     refetch: refetchPRs,
-  } = usePullRequests(
+  } = useInfinitePullRequests(
     selectedRepo?.owner.login || "",
     selectedRepo?.name || "",
     {
@@ -47,8 +56,9 @@ export default function Dashboard() {
     }
   );
 
-  const repositories = repositoriesData?.repositories || [];
-  const allPullRequests = pullRequestsData?.pulls || [];
+  // 무한 스크롤 데이터 병합
+  const repositories = repositoriesData?.pages.flatMap(page => page.repositories) || [];
+  const allPullRequests = pullRequestsData?.pages.flatMap(page => page.pulls) || [];
 
   // 내 PR만 필터링하거나 모든 PR 표시 (비즈니스 로직 서비스 사용)
   const pullRequests = PRSelectionService.filterPRsByOwnership(
@@ -83,6 +93,19 @@ export default function Dashboard() {
 
   const selectionStats = PRSelectionService.getSelectionStats(selectedPRs);
   const canSelectMore = selectionStats.canSelectMore;
+
+  // 무한 스크롤 관찰자
+  const { ref: reposScrollRef } = useInfiniteScroll(
+    fetchNextRepos,
+    hasNextRepos,
+    isFetchingNextRepos
+  );
+  
+  const { ref: prsScrollRef } = useInfiniteScroll(
+    fetchNextPRs,
+    hasNextPRs,
+    isFetchingNextPRs
+  );
 
   const handleStartAnalysis = () => {
     if (selectedPRs.length === 0) return;
@@ -177,6 +200,16 @@ export default function Dashboard() {
                       selected={selectedRepo?.id === repo.id}
                     />
                   ))}
+                  
+                  {/* 무한 스크롤 로딩 */}
+                  {isFetchingNextRepos && (
+                    <div className="flex justify-center py-4">
+                      <LoadingState>더 많은 레포지토리 불러오는 중...</LoadingState>
+                    </div>
+                  )}
+                  
+                  {/* 무한 스크롤 관찰 영역 */}
+                  <div ref={reposScrollRef} className="h-4" />
                 </div>
               )}
             </div>
@@ -275,6 +308,16 @@ export default function Dashboard() {
                           disabled={!canSelectMore && !isPRSelected(pr)}
                         />
                       ))}
+                      
+                      {/* 무한 스크롤 로딩 */}
+                      {isFetchingNextPRs && (
+                        <div className="flex justify-center py-4">
+                          <LoadingState>더 많은 PR 불러오는 중...</LoadingState>
+                        </div>
+                      )}
+                      
+                      {/* 무한 스크롤 관찰 영역 */}
+                      <div ref={prsScrollRef} className="h-4" />
                     </div>
                   )}
                 </div>
@@ -296,11 +339,20 @@ export default function Dashboard() {
           <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-xl">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-body1 font-medium text-gray-900">
-                    선택됨: {selectedPRs.length}개 PR
-                  </span>
-                  <span className="text-body2 text-gray-500">(최대 5개)</span>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
+                    <span className="text-body1 font-medium text-gray-900">
+                      선택됨: {selectedPRs.length}개 PR
+                    </span>
+                    <span className="text-body2 text-gray-500">(최대 5개)</span>
+                  </div>
+                  
+                  {/* AI 설정 토글 */}
+                  <AIToggle 
+                    enabled={aiEnabled} 
+                    onToggle={toggleAI}
+                    className="bg-white/90 backdrop-blur-sm p-3 rounded-lg border border-gray-200 shadow-sm"
+                  />
                 </div>
 
                 <Button
